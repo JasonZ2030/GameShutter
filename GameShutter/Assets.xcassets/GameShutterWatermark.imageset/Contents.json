@@ -1,0 +1,12 @@
+{
+  "images" : [
+    {
+      "filename" : "GameShutterWatermark.png",
+      "idiom" : "universal"
+    }
+  ],
+  "info" : {
+    "author" : "xcode",
+    "version" : 1
+  }
+}

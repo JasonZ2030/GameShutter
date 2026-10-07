@@ -1,0 +1,12 @@
+{
+  "images" : [
+    {
+      "filename" : "flip_camera.png",
+      "idiom" : "universal"
+    }
+  ],
+  "info" : {
+    "author" : "xcode",
+    "version" : 1
+  }
+}
