@@ -56,6 +56,19 @@
                                             <segue destination="eb3-ay-OGW" kind="show" identifier="AppSettings" id="VGP-FZ-rxt"/>
                                         </connections>
                                     </button>
+                                    <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="VEd-it-Btn" userLabel="VideoEditor">
+                                        <rect key="frame" x="564" y="0.0" width="44" height="44"/>
+                                        <constraints>
+                                            <constraint firstAttribute="width" constant="44" id="VEd-w4-4ab"/>
+                                            <constraint firstAttribute="height" constant="44" id="VEd-h4-4ab"/>
+                                        </constraints>
+                                        <color key="tintColor" systemColor="labelColor"/>
+                                        <inset key="imageEdgeInsets" minX="12" minY="12" maxX="12" maxY="12"/>
+                                        <state key="normal" image="film" catalog="system"/>
+                                        <connections>
+                                            <action selector="openVideoEditor:" destination="BYZ-38-t0r" eventType="touchUpInside" id="VEd-ac-t1n"/>
+                                        </connections>
+                                    </button>
                                 </subviews>
                             </stackView>
                             <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" spacing="27" translatesAutoresizingMaskIntoConstraints="NO" id="Dfe-9T-fxr" userLabel="sideControl">
@@ -163,6 +176,7 @@
                         <outlet property="recordButton" destination="Lzx-yR-M1p" id="oq4-YG-9EZ"/>
                         <outlet property="resumeButton" destination="NLP-uF-TJB" id="Zkq-aT-Eas"/>
                         <outlet property="stopButton" destination="Yd8-n5-a8g" id="o7X-Pg-EYg"/>
+                        <outlet property="videoEditorButton" destination="VEd-it-Btn" id="VEd-ou-t1t"/>
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="dkx-z0-nzr" sceneMemberID="firstResponder"/>
@@ -241,6 +255,7 @@
         <image name="figure.run" catalog="system" width="115" height="128"/>
         <image name="gearshape" catalog="system" width="128" height="123"/>
         <image name="record.circle" catalog="system" width="128" height="123"/>
+        <image name="film" catalog="system" width="128" height="93"/>
         <image name="stop.circle" catalog="system" width="128" height="123"/>
         <systemColor name="groupTableViewBackgroundColor">
             <color red="0.94901960784313721" green="0.94901960784313721" blue="0.96862745098039216" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>

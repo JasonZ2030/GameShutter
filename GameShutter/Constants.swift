@@ -31,5 +31,12 @@ struct Constants {
     struct QueueLabels {
         static let VideoSessionQueue = "video_capture_session_queue"
         static let AudioSessionQueue = "audio_capture_session_queue"
+        static let PhotosSaveQueue = "photos_save_queue"
+    }
+
+    struct PhotosAlbums {
+        // Highlight clips are saved to Photos as <FolderName> (folder) › yyyy_MM_dd (album).
+        static let FolderName = "GameShutter"
+        static let DateAlbumFormat = "yyyy_MM_dd"
     }
 }

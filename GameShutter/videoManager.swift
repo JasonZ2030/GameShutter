@@ -60,6 +60,10 @@ class videoManager: NSObject {
     //added by hanhui
     var ishighLighting = false
     var highLightArray:[CMTime] = []
+    // Wall-clock moment of each highlight, parallel to highLightArray — stamped as
+    // the saved clip's Photos creationDate, so clips sort in the order they
+    // happened (saving runs concurrently, so save time doesn't).
+    var highLightDates: [Date] = []
     // The serial queue videoOutput() runs on. stopRecording() dispatches its
     // markAsFinished()/finish() sequence through here so it can never land in the
     // middle of an in-flight (or already-enqueued) videoOutput() call and append
@@ -501,6 +505,7 @@ class videoManager: NSObject {
                         })
                         //clear the lightight queue
                         self.highLightArray.removeAll()
+                        self.highLightDates.removeAll()
                         let decide = confirmSaveFullVideo ?? { $0(true) }
                         DispatchQueue.main.async {
                             decide { saveFullVideo in
@@ -629,7 +634,10 @@ class videoManager: NSObject {
         // `completion` fires exactly once on all paths — including no highlights
         // and every highlight skipped for being too close to the start.
         let exports = DispatchGroup()
-        for lightTime in highLightArray
+        // Decided once per recording, so every clip lands in the same album even
+        // if the saves straddle midnight.
+        let albumName = PhotosAlbumSaver.todayAlbumName()
+        for (lightTime, lightDate) in zip(highLightArray, highLightDates)
         {
             let uuid = UUID().uuidString
             let paths = NSSearchPathForDirectoriesInDomains(.documentDirectory, .userDomainMask, true)
@@ -666,18 +674,12 @@ class videoManager: NSObject {
                 case .completed:
                     print("exported at \(videoURL)")//
                     self.requestPhotoLibraryAccess(completion: { (granted) in
-                        PHPhotoLibrary.shared().performChanges({
-                            PHAssetChangeRequest.creationRequestForAssetFromVideo(atFileURL: URL(fileURLWithPath:clippath))
-                        }) { saved, error in
-                            DispatchQueue.main.async {
-                                if saved == true {
-                                    print("highlight saved to photo library")
-                                } else {
-                                    print("Video did not save to photo library, reason- \(String(describing: error?.localizedDescription))")
-                                }
-                            }
-                            
+                        guard granted else {
+                            print("No Photos access, highlight not saved")
+                            try? FileManager.default.removeItem(at: videoURL)
+                            return
                         }
+                        PhotosAlbumSaver.save(videoURL: videoURL, albumName: albumName, deleteAfterSave: true, creationDate: lightDate)
                     })
                     break
                 case .failed:
@@ -874,6 +876,7 @@ extension videoManager: AVCaptureVideoDataOutputSampleBufferDelegate, AVCaptureA
                 ishighLighting = false //disable the highlight
                 let hightTime = CMTimeSubtract(sampleTime.presentationTimeStamp, self.firstSamplebufTime)
                 highLightArray.append(hightTime)
+                highLightDates.append(Date())
                 let count = highLightArray.count
                 DispatchQueue.main.async { self.onHighlightCaptured?(count) }
             }

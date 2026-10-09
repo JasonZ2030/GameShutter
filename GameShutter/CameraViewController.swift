@@ -27,6 +27,7 @@ class CameraViewController: UIViewController {
     @IBOutlet weak var stopButton: UIButton?
     @IBOutlet weak var cameraSwitchButton: UIButton?
     @IBOutlet weak var highLight: UIButton!
+    @IBOutlet weak var videoEditorButton: UIButton!
     @IBOutlet weak var Timerdisp: UILabel!
 
     @IBOutlet weak var debugInfoLabel: UILabel!
@@ -51,7 +52,14 @@ class CameraViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         UIApplication.shared.isIdleTimerDisabled = false
+        // Keeps UIDevice.orientation current for the video editor, which opens in
+        // whichever orientation the device is held. Started here rather than when
+        // the editor opens: right after starting, the orientation reads .unknown.
+        UIDevice.current.beginGeneratingDeviceOrientationNotifications()
         highLight.isEnabled = false
+        if #available(iOS 13.0, *) {} else {
+            videoEditorButton.isHidden = true
+        }
         vManager.init_setup()
         vManager.onSaveFailed = { [weak self] message in
             self?.presentSimpleAlert(title: "Save Failed",
@@ -234,6 +242,8 @@ class CameraViewController: UIViewController {
             setHighlightCount(0)
             self.vManager.startRecording()
             highLight.isEnabled = true
+            // Presenting the editor full-screen would tear down the capture session.
+            videoEditorButton.isEnabled = false
             self.vManager.timer = Timer.scheduledTimer(timeInterval: 1.0, target: self, selector: #selector(keep_timer), userInfo: nil, repeats: true)
             if #available(iOS 13.0, *) {
                 recordButtonImage = UIImage(systemName: "pause.circle")
@@ -260,6 +270,7 @@ class CameraViewController: UIViewController {
         self.highLight.isEnabled = false
         setHighlightCount(0)
         Timerdisp.text = "0:00:00"
+        videoEditorButton.isEnabled = true
         var recordButtonImage: UIImage?
         if #available(iOS 13.0, *) {
             recordButtonImage = UIImage(systemName: "record.circle")
@@ -311,6 +322,17 @@ class CameraViewController: UIViewController {
 
     @IBAction func ResumeTapped(_ sender: Any) {
         recordToggled()
+    }
+
+    @IBAction func openVideoEditor(_ sender: Any) {
+        guard #available(iOS 13.0, *), !vManager.isCapturing else { return }
+        // Highlight folders first; picking one opens the editor on top.
+        let folders = HighlightFoldersViewController()
+        folders.modalPresentationStyle = .fullScreen
+        // Let the folder browser and editor match how the device is held
+        // (portrait or landscape); the browser resets this when it closes.
+        AppDelegate.orientationMask = .allButUpsideDown
+        present(folders, animated: true)
     }
 
     @IBAction func highLightTouched(_ sender: Any) {
