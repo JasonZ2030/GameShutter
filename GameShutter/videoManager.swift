@@ -175,9 +175,6 @@ class videoManager: NSObject {
             do {
                 self.frontCameraDeviceInput = try AVCaptureDeviceInput(device: frontCameraDevice)
                 self.backCameraDeviceInput = try AVCaptureDeviceInput(device: backCameraDevice)
-                try backCameraDevice.lockForConfiguration()
-                backCameraDevice.videoZoomFactor = 1.0
-                backCameraDevice.unlockForConfiguration()
             } catch {
                 print("Unable to obtain video device input")
                 return
@@ -218,6 +215,11 @@ class videoManager: NSObject {
                 self.captureSession?.addOutput(audioDataOutput)
             }
             self.captureSession?.commitConfiguration()
+            // Start at the standard wide view (1×), like the Camera app. This
+            // has to come after the session is configured: adding the input
+            // applies the session preset's format, which resets the zoom to
+            // factor 1.0, the ultra-wide (0.5×) on multi-camera devices.
+            self.setZoom(1, on: backCameraDevice, ramped: false)
             //captureSession?.startRunning()
         }
     }
@@ -256,6 +258,70 @@ class videoManager: NSObject {
         videoPreviewViewBounds?.size.height = view.bounds.height * videoPreviewView.contentScaleFactor
     }
     
+    // MARK: Zoom presets
+
+    // The videoZoomFactor that gives `device` the standard wide (1×) view. On
+    // the virtual multi-camera devices (triple / dual-wide) factor 1 is the
+    // ultra-wide (0.5×), and the wide camera takes over at the first
+    // switch-over factor, usually 2. Single cameras: 1.
+    static func wideZoomFactor(of device: AVCaptureDevice) -> CGFloat {
+        if #available(iOS 13.0, *), let first = device.virtualDeviceSwitchOverVideoZoomFactors.first {
+            return CGFloat(truncating: first)
+        }
+        return 1
+    }
+
+    // The widest zoom the app allows. The ultra-wide's full 0.5× is left out on
+    // purpose; 0.75× is the widest preset.
+    static let minimumShownZoom: CGFloat = 0.75
+
+    // The lowest videoZoomFactor allowed on `device` (0.75× where it can go that
+    // wide, otherwise its own minimum).
+    static func minimumZoomFactor(of device: AVCaptureDevice) -> CGFloat {
+        return max(device.minAvailableVideoZoomFactor, minimumShownZoom * wideZoomFactor(of: device))
+    }
+
+    var activeCameraDevice: AVCaptureDevice? {
+        return (isBackCameraActive ? backCameraDeviceInput : frontCameraDeviceInput)?.device
+    }
+
+    // Zoom as the user sees it (1 = standard wide, 0.5 = ultra-wide) on the active camera.
+    var shownZoom: CGFloat {
+        guard let device = activeCameraDevice else { return 1 }
+        return device.videoZoomFactor / videoManager.wideZoomFactor(of: device)
+    }
+
+    // The shown-zoom range the active camera supports, or nil before setup.
+    var shownZoomRange: ClosedRange<CGFloat>? {
+        guard let device = activeCameraDevice else { return nil }
+        let wide = videoManager.wideZoomFactor(of: device)
+        return (videoManager.minimumZoomFactor(of: device) / wide)...(device.activeFormat.videoMaxZoomFactor / wide)
+    }
+
+    // Zooms the active camera to a shown zoom (clamped to what it supports),
+    // ramping smoothly like the Camera app's zoom buttons.
+    func setShownZoom(_ zoom: CGFloat) {
+        guard let device = activeCameraDevice else { return }
+        setZoom(zoom, on: device, ramped: true)
+    }
+
+    private func setZoom(_ zoom: CGFloat, on device: AVCaptureDevice, ramped: Bool) {
+        let factor = min(max(zoom * videoManager.wideZoomFactor(of: device), videoManager.minimumZoomFactor(of: device)),
+                         device.activeFormat.videoMaxZoomFactor)
+        do {
+            try device.lockForConfiguration()
+            if ramped {
+                device.ramp(toVideoZoomFactor: factor, withRate: 8)
+            } else {
+                device.videoZoomFactor = factor
+            }
+            device.unlockForConfiguration()
+            deviceZoomFactor = factor
+        } catch {
+            print("Can't change zoom factor")
+        }
+    }
+
     func switchCamera() {
          guard let captureSession = captureSession else {
              print("Can't switch camera, session is nil")
@@ -272,22 +338,28 @@ class videoManager: NSObject {
              return
          }
          
+         // Keep the zoom the user sees (e.g. 1.5×) across the switch. The raw
+         // factor differs per device: on the back multi-camera device 1× is
+         // factor 2, on the front camera it's factor 1.
+         let shownZoom = activeCameraDevice.map { deviceZoomFactor / videoManager.wideZoomFactor(of: $0) } ?? 1
+
          captureSession.beginConfiguration()
          //Change camera device inputs from back to front or opposite
          if captureSession.inputs.contains(frontCameraDeviceInput) == true {
              captureSession.removeInput(frontCameraDeviceInput)
              captureSession.addInput(backCameraDeviceInput)
-             backCameraDeviceInput.device.videoZoomFactor = deviceZoomFactor
              isBackCameraActive = true
          } else if captureSession.inputs.contains(backCameraDeviceInput) == true {
              captureSession.removeInput(backCameraDeviceInput)
              captureSession.addInput(frontCameraDeviceInput)
-             frontCameraDeviceInput.device.videoZoomFactor = deviceZoomFactor
              isBackCameraActive = false
          }
-         
          //Commit all the configuration changes at once
          captureSession.commitConfiguration();
+         // After the commit, which can change the device's format and reset its zoom.
+         if let device = activeCameraDevice {
+             setZoom(shownZoom, on: device, ramped: false)
+         }
          
          // fix mirrored preview
          videoPreviewView?.transform = (videoPreviewView?.transform.scaledBy(x: -1, y: 1))!

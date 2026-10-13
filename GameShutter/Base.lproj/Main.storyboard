@@ -71,78 +71,6 @@
                                     </button>
                                 </subviews>
                             </stackView>
-                            <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" spacing="27" translatesAutoresizingMaskIntoConstraints="NO" id="Dfe-9T-fxr" userLabel="sideControl">
-                                <rect key="frame" x="602" y="75" width="57" height="225"/>
-                                <subviews>
-                                    <button opaque="NO" alpha="0.80000000000000004" contentMode="scaleToFill" contentHorizontalAlignment="fill" contentVerticalAlignment="fill" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="Lzx-yR-M1p" userLabel="RecordButton">
-                                        <rect key="frame" x="0.0" y="0.0" width="57" height="57"/>
-                                        <constraints>
-                                            <constraint firstAttribute="width" constant="57" id="kuw-I4-56v"/>
-                                            <constraint firstAttribute="height" constant="57" id="zmH-ts-9hL"/>
-                                        </constraints>
-                                        <color key="tintColor" systemColor="systemGreenColor"/>
-                                        <state key="normal">
-                                            <imageReference key="image" image="record.circle" catalog="system" symbolScale="large" variableValue="1"/>
-                                        </state>
-                                        <connections>
-                                            <action selector="record:" destination="BYZ-38-t0r" eventType="touchUpInside" id="2o0-GQ-NCk"/>
-                                        </connections>
-                                    </button>
-                                    <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="fill" contentVerticalAlignment="fill" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="Yd8-n5-a8g">
-                                        <rect key="frame" x="0.0" y="84" width="57" height="57"/>
-                                        <constraints>
-                                            <constraint firstAttribute="height" constant="57" id="Msq-AH-D5I"/>
-                                        </constraints>
-                                        <color key="tintColor" systemColor="systemRedColor"/>
-                                        <inset key="imageEdgeInsets" minX="0.0" minY="0.0" maxX="2.2250738585072014e-308" maxY="0.0"/>
-                                        <state key="normal">
-                                            <imageReference key="image" image="stop.circle" catalog="system" symbolScale="large"/>
-                                        </state>
-                                        <connections>
-                                            <action selector="stopRecord:" destination="BYZ-38-t0r" eventType="touchUpInside" id="mGv-wF-tXo"/>
-                                        </connections>
-                                    </button>
-                                    <button opaque="NO" alpha="0.80000000000000004" contentMode="scaleToFill" contentHorizontalAlignment="fill" contentVerticalAlignment="fill" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="m5n-qY-aN4">
-                                        <rect key="frame" x="0.0" y="168" width="57" height="57"/>
-                                        <constraints>
-                                            <constraint firstAttribute="width" constant="57" id="i7S-15-ZKd"/>
-                                            <constraint firstAttribute="height" constant="57" id="tON-wO-12E"/>
-                                        </constraints>
-                                        <color key="tintColor" systemColor="systemPurpleColor"/>
-                                        <state key="normal">
-                                            <imageReference key="image" image="figure.run" catalog="system" symbolScale="large" variableValue="0.0"/>
-                                            <preferredSymbolConfiguration key="preferredSymbolConfiguration" configurationType="font">
-                                                <fontDescription key="fontDescription" style="UICTFontTextStyleBody"/>
-                                            </preferredSymbolConfiguration>
-                                        </state>
-                                        <connections>
-                                            <action selector="highLightTouched:" destination="BYZ-38-t0r" eventType="touchUpInside" id="jqI-Gw-39s"/>
-                                        </connections>
-                                    </button>
-                                </subviews>
-                            </stackView>
-                            <button opaque="NO" alpha="0.90000000000000002" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="NLP-uF-TJB">
-                                <rect key="frame" x="208.5" y="147.5" width="250" height="80"/>
-                                <constraints>
-                                    <constraint firstAttribute="height" constant="80" id="b27-po-mUK"/>
-                                    <constraint firstAttribute="width" constant="250" id="vIU-uZ-Rt6"/>
-                                </constraints>
-                                <fontDescription key="fontDescription" style="UICTFontTextStyleTitle0"/>
-                                <inset key="imageEdgeInsets" minX="0.0" minY="0.0" maxX="2.2250738585072014e-308" maxY="0.0"/>
-                                <state key="normal" title="Tap to Resume">
-                                    <color key="titleColor" systemColor="systemGreenColor"/>
-                                </state>
-                                <buttonConfiguration key="configuration" style="plain" title="Tap to Resume">
-                                    <backgroundConfiguration key="background" cornerRadius="10">
-                                        <color key="backgroundColor" systemColor="systemOrangeColor"/>
-                                    </backgroundConfiguration>
-                                    <fontDescription key="titleFontDescription" style="UICTFontTextStyleTitle0"/>
-                                    <color key="baseForegroundColor" systemColor="systemRedColor"/>
-                                </buttonConfiguration>
-                                <connections>
-                                    <action selector="ResumeTapped:" destination="BYZ-38-t0r" eventType="touchUpInside" id="AE5-bj-USM"/>
-                                </connections>
-                            </button>
                             <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" fixedFrame="YES" text="" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="nRg-tT-PpQ" userLabel="debugInfo">
                                 <rect key="frame" x="72" y="354" width="523" height="21"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
@@ -156,11 +84,7 @@
                         <gestureRecognizers/>
                         <constraints>
                             <constraint firstItem="Pit-LU-2ac" firstAttribute="top" secondItem="6Tk-OE-BBY" secondAttribute="top" constant="8" id="1CD-e0-Yi5"/>
-                            <constraint firstItem="NLP-uF-TJB" firstAttribute="centerY" secondItem="8bC-Xf-vdC" secondAttribute="centerY" id="Wim-xH-Jr5"/>
-                            <constraint firstItem="NLP-uF-TJB" firstAttribute="centerX" secondItem="8bC-Xf-vdC" secondAttribute="centerX" id="iVT-9d-6Sw"/>
-                            <constraint firstItem="6Tk-OE-BBY" firstAttribute="trailing" secondItem="Dfe-9T-fxr" secondAttribute="trailing" constant="8" id="n2v-FO-jqt"/>
                             <constraint firstItem="Pit-LU-2ac" firstAttribute="centerX" secondItem="8bC-Xf-vdC" secondAttribute="centerX" id="qDl-4w-d7U"/>
-                            <constraint firstItem="Dfe-9T-fxr" firstAttribute="centerY" secondItem="8bC-Xf-vdC" secondAttribute="centerY" id="tb3-nG-HVC"/>
                         </constraints>
                         <edgeInsets key="layoutMargins" top="0.0" left="20" bottom="0.0" right="20"/>
                         <connections>
@@ -172,10 +96,6 @@
                         <outlet property="Timerdisp" destination="iAV-ak-JT5" id="DDp-Cf-qTm"/>
                         <outlet property="cameraSwitchButton" destination="55A-Z1-P7q" id="G3b-Qt-1aC"/>
                         <outlet property="debugInfoLabel" destination="nRg-tT-PpQ" id="1k9-aD-LOR"/>
-                        <outlet property="highLight" destination="m5n-qY-aN4" id="mwT-xY-q0o"/>
-                        <outlet property="recordButton" destination="Lzx-yR-M1p" id="oq4-YG-9EZ"/>
-                        <outlet property="resumeButton" destination="NLP-uF-TJB" id="Zkq-aT-Eas"/>
-                        <outlet property="stopButton" destination="Yd8-n5-a8g" id="o7X-Pg-EYg"/>
                         <outlet property="videoEditorButton" destination="VEd-it-Btn" id="VEd-ou-t1t"/>
                     </connections>
                 </viewController>

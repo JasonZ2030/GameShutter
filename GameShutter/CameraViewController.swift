@@ -19,18 +19,107 @@ final class HighlightBadgeLabel: UILabel {
     }
 }
 
+// The red "PAUSED" tag under the timer: bold caps with side padding.
+final class PausedTagLabel: UILabel {
+    override var intrinsicContentSize: CGSize {
+        let size = super.intrinsicContentSize
+        return CGSize(width: size.width + 14, height: 24)
+    }
+}
+
+// The round capture controls, styled after the iOS Camera app and drawn with
+// layers (no images or SF Symbols, so they also work on iOS 12).
+final class CaptureControlButton: UIButton {
+    enum Style {
+        case record     // red disc inside a ring
+        case stop       // red rounded square inside a ring
+        case smallStop  // red rounded square on a plain dark disc
+        case pause      // white pause bars on a plain dark disc
+    }
+
+    var style: Style = .record {
+        didSet {
+            setNeedsLayout()
+            switch style {
+            case .record: accessibilityLabel = "Record"
+            case .stop, .smallStop: accessibilityLabel = "Stop"
+            case .pause: accessibilityLabel = "Pause"
+            }
+        }
+    }
+
+    private let discLayer = CAShapeLayer()
+    private let glyphLayer = CAShapeLayer()
+
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        layer.addSublayer(discLayer)
+        layer.addSublayer(glyphLayer)
+        accessibilityLabel = "Record"
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    // Pressed/disabled dimming goes on the sublayers, leaving the view's own
+    // alpha free for the show/hide fades.
+    override var isHighlighted: Bool { didSet { updateDimming() } }
+    override var isEnabled: Bool { didSet { updateDimming() } }
+
+    private func updateDimming() {
+        let opacity: Float = !isEnabled ? 0.4 : (isHighlighted ? 0.6 : 1)
+        discLayer.opacity = opacity
+        glyphLayer.opacity = opacity
+    }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        let side = min(bounds.width, bounds.height)
+        let rect = CGRect(x: (bounds.width - side) / 2, y: (bounds.height - side) / 2, width: side, height: side)
+        let center = CGPoint(x: rect.midX, y: rect.midY)
+        let ringed = style == .record || style == .stop
+
+        discLayer.path = UIBezierPath(ovalIn: rect.insetBy(dx: 1.5, dy: 1.5)).cgPath
+        discLayer.fillColor = UIColor(white: 0.08, alpha: ringed ? 0.5 : 0.65).cgColor
+        discLayer.strokeColor = UIColor(white: 1, alpha: ringed ? 0.45 : 0).cgColor
+        discLayer.lineWidth = 3
+
+        let glyph: UIBezierPath
+        switch style {
+        case .record:
+            glyph = UIBezierPath(ovalIn: rect.insetBy(dx: side * 0.09, dy: side * 0.09))
+        case .stop, .smallStop:
+            let square = side * 0.4
+            glyph = UIBezierPath(roundedRect: CGRect(x: center.x - square / 2, y: center.y - square / 2,
+                                                     width: square, height: square),
+                                 cornerRadius: square * 0.22)
+        case .pause:
+            let barWidth = side * 0.1, barHeight = side * 0.34, gap = side * 0.1
+            glyph = UIBezierPath(roundedRect: CGRect(x: center.x - gap / 2 - barWidth, y: center.y - barHeight / 2,
+                                                     width: barWidth, height: barHeight),
+                                 cornerRadius: barWidth / 2)
+            glyph.append(UIBezierPath(roundedRect: CGRect(x: center.x + gap / 2, y: center.y - barHeight / 2,
+                                                          width: barWidth, height: barHeight),
+                                      cornerRadius: barWidth / 2))
+        }
+        glyphLayer.path = glyph.cgPath
+        glyphLayer.fillColor = (style == .pause ? UIColor.white
+                                                : UIColor(red: 0.93, green: 0.27, blue: 0.24, alpha: 1)).cgColor
+        CATransaction.commit()
+    }
+}
+
 class CameraViewController: UIViewController {
     //MARK: IBOutlets
 
-    @IBOutlet weak var recordButton: UIButton?
-    @IBOutlet weak var stopButton: UIButton?
     @IBOutlet weak var cameraSwitchButton: UIButton?
-    @IBOutlet weak var highLight: UIButton!
     @IBOutlet weak var videoEditorButton: UIButton!
     @IBOutlet weak var Timerdisp: UILabel!
 
     @IBOutlet weak var debugInfoLabel: UILabel!
-    @IBOutlet weak var resumeButton: UIButton!
     var vManager = videoManager()
 
     let activityIndicator = UIActivityIndicatorView(style: UIActivityIndicatorView.Style.whiteLarge)
@@ -39,12 +128,45 @@ class CameraViewController: UIViewController {
 
     private let highlightBadge = HighlightBadgeLabel()
 
+    // Capture controls, iOS Camera style, in a column on the right edge (built in
+    // setupCaptureControls; updateCaptureControls switches them per state):
+    //   idle:      big Record in the middle; nothing else.
+    //   recording: big Stop in the middle, Pause above it, Highlight below it.
+    //   paused:    big Record (resume) above, small Stop in the middle, no Highlight.
+    private let mainCaptureButton = CaptureControlButton()
+    private let sideCaptureButton = CaptureControlButton()
+    private let highLight = UIButton(type: .custom)
+    private var mainCaptureWidth: NSLayoutConstraint!
+    private var sideCaptureWidth: NSLayoutConstraint!
+    private static let largeCaptureSize: CGFloat = 80
+    private static let smallCaptureSize: CGFloat = 56
+    private static let highlightSize: CGFloat = 64
+    // Distance from the middle slot's center to the slots above and below.
+    private static let captureSlotSpacing: CGFloat = 112
+
+    // Zoom presets, Camera-app style: a column just inside the capture controls.
+    // Values are shown zoom (1 = standard wide). The active one gets a dark disc
+    // and yellow text showing the live zoom. Hidden: presets turned off in
+    // Settings (all but 1×, via ZoomPresetSettings) and presets the active
+    // camera can't reach (0.75× on a camera without an ultra-wide).
+    private static let zoomPresets: [CGFloat] = [0.75, 1, 1.25, 1.5]
+    private static let zoomPresetSize: CGFloat = 40
+    private var zoomPresetButtons: [UIButton] = []
+
+    // Timer styling: a half-transparent rounded backing behind the storyboard
+    // timer label (red while recording, gray while paused) with white text,
+    // plus a red PAUSED tag below it while paused. Idle shows the plain gray
+    // label. The backing lives in the timer's stack's superview, behind the
+    // stack, since a label's own subviews would draw over its text.
+    private let timerBacking = UIView()
+    private let pausedTag = PausedTagLabel()
+
     //added by Jason, hide navigation item bar
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         navigationController?.setNavigationBarHidden(true, animated: false)
-        resumeButton.isHidden = true
-        resumeButton.isEnabled = false
+        // Back from Settings, where presets may have been turned on or off.
+        refreshZoomPresets()
     }
 
     // MARK: Object Life Cycle
@@ -55,7 +177,6 @@ class CameraViewController: UIViewController {
         // whichever orientation the device is held. Started here rather than when
         // the editor opens: right after starting, the orientation reads .unknown.
         UIDevice.current.beginGeneratingDeviceOrientationNotifications()
-        highLight.isEnabled = false
         if #available(iOS 13.0, *) {} else {
             videoEditorButton.isHidden = true
         }
@@ -70,6 +191,9 @@ class CameraViewController: UIViewController {
             guard let self = self, self.vManager.isCapturing else { return }
             self.setHighlightCount(count)
         }
+        setupCaptureControls()
+        setupZoomPresets()
+        setupTimerStyling()
         setupHighlightBadge()
         let notificationCenter = NotificationCenter.default
         notificationCenter.addObserver(self, selector: #selector(appMovedToBackground), name: UIApplication.didEnterBackgroundNotification, object: nil)
@@ -86,6 +210,223 @@ class CameraViewController: UIViewController {
         // Pinch-to-zoom
         let pinchGesture = UIPinchGestureRecognizer(target: self, action: #selector(handlePinchGesture(_:)))
         view.addGestureRecognizer(pinchGesture)
+    }
+
+    private func setupCaptureControls() {
+        mainCaptureButton.addTarget(self, action: #selector(mainCaptureTapped), for: .touchUpInside)
+        sideCaptureButton.addTarget(self, action: #selector(sideCaptureTapped), for: .touchUpInside)
+        highLight.addTarget(self, action: #selector(highLightTouched(_:)), for: .touchUpInside)
+
+        // Highlight: a white shutter-style disc with the running figure in
+        // Court Orange.
+        highLight.backgroundColor = .white
+        highLight.layer.cornerRadius = Self.highlightSize / 2
+        highLight.layer.borderWidth = 4
+        highLight.layer.borderColor = UIColor(white: 0.1, alpha: 0.6).cgColor
+        highLight.tintColor = UIColor(red: 1.0, green: 0x6A / 255.0, blue: 0x13 / 255.0, alpha: 1.0)
+        highLight.accessibilityLabel = "Highlight"
+        if #available(iOS 13.0, *) {
+            highLight.setImage(UIImage(systemName: "figure.run",
+                                       withConfiguration: UIImage.SymbolConfiguration(pointSize: 28, weight: .semibold)),
+                               for: .normal)
+        } else {
+            highLight.setImage(UIImage(named: "Highlight"), for: .normal)
+            highLight.imageView?.contentMode = .scaleAspectFit
+            highLight.imageEdgeInsets = UIEdgeInsets(top: 14, left: 14, bottom: 14, right: 14)
+        }
+
+        let guide = view.safeAreaLayoutGuide
+        for control in [sideCaptureButton, mainCaptureButton, highLight] as [UIView] {
+            control.translatesAutoresizingMaskIntoConstraints = false
+            view.addSubview(control)
+        }
+        mainCaptureWidth = mainCaptureButton.widthAnchor.constraint(equalToConstant: Self.largeCaptureSize)
+        sideCaptureWidth = sideCaptureButton.widthAnchor.constraint(equalToConstant: Self.smallCaptureSize)
+        NSLayoutConstraint.activate([
+            mainCaptureButton.centerXAnchor.constraint(equalTo: guide.trailingAnchor,
+                                                       constant: -(Self.largeCaptureSize / 2 + 12)),
+            mainCaptureButton.centerYAnchor.constraint(equalTo: view.centerYAnchor),
+            mainCaptureWidth,
+            mainCaptureButton.heightAnchor.constraint(equalTo: mainCaptureButton.widthAnchor),
+
+            sideCaptureButton.centerXAnchor.constraint(equalTo: mainCaptureButton.centerXAnchor),
+            sideCaptureButton.centerYAnchor.constraint(equalTo: view.centerYAnchor, constant: -Self.captureSlotSpacing),
+            sideCaptureWidth,
+            sideCaptureButton.heightAnchor.constraint(equalTo: sideCaptureButton.widthAnchor),
+
+            highLight.centerXAnchor.constraint(equalTo: mainCaptureButton.centerXAnchor),
+            highLight.centerYAnchor.constraint(equalTo: view.centerYAnchor, constant: Self.captureSlotSpacing),
+            highLight.widthAnchor.constraint(equalToConstant: Self.highlightSize),
+            highLight.heightAnchor.constraint(equalTo: highLight.widthAnchor)
+        ])
+        updateCaptureControls(animated: false)
+    }
+
+    private func setupZoomPresets() {
+        zoomPresetButtons = Self.zoomPresets.enumerated().map { index, _ in
+            let button = UIButton(type: .custom)
+            button.tag = index
+            button.titleLabel?.font = UIFont.systemFont(ofSize: 13, weight: .semibold)
+            button.titleLabel?.adjustsFontSizeToFitWidth = true
+            button.titleLabel?.minimumScaleFactor = 0.7
+            button.contentEdgeInsets = UIEdgeInsets(top: 0, left: 3, bottom: 0, right: 3)
+            button.layer.cornerRadius = Self.zoomPresetSize / 2
+            // Keeps the plain (inactive) labels readable over bright footage.
+            button.titleLabel?.layer.shadowColor = UIColor.black.cgColor
+            button.titleLabel?.layer.shadowOpacity = 0.6
+            button.titleLabel?.layer.shadowRadius = 2
+            button.titleLabel?.layer.shadowOffset = .zero
+            button.addTarget(self, action: #selector(zoomPresetTapped(_:)), for: .touchUpInside)
+            button.translatesAutoresizingMaskIntoConstraints = false
+            NSLayoutConstraint.activate([
+                button.widthAnchor.constraint(equalToConstant: Self.zoomPresetSize),
+                button.heightAnchor.constraint(equalToConstant: Self.zoomPresetSize)
+            ])
+            return button
+        }
+        let column = UIStackView(arrangedSubviews: zoomPresetButtons)
+        column.axis = .vertical
+        column.spacing = 6
+        column.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(column)
+        NSLayoutConstraint.activate([
+            column.centerXAnchor.constraint(equalTo: mainCaptureButton.centerXAnchor,
+                                            constant: -(Self.largeCaptureSize / 2 + 16 + Self.zoomPresetSize / 2)),
+            column.centerYAnchor.constraint(equalTo: view.centerYAnchor)
+        ])
+        refreshZoomPresets()
+    }
+
+    // `zoom` is the shown zoom to reflect; nil reads the camera's current one
+    // (pass the target while a ramp is still running).
+    private func refreshZoomPresets(zoom: CGFloat? = nil) {
+        let zoom = zoom ?? vManager.shownZoom
+        let range = vManager.shownZoomRange
+        for (button, preset) in zip(zoomPresetButtons, Self.zoomPresets) {
+            let reachable = range.map { preset >= $0.lowerBound - 0.01 && preset <= $0.upperBound + 0.01 } ?? true
+            button.isHidden = !reachable || !ZoomPresetSettings.isEnabled(preset)
+        }
+        let visible = zip(zoomPresetButtons, Self.zoomPresets).filter { !$0.0.isHidden }
+        // The active preset is the highest one at or below the zoom, as in the Camera app.
+        let active = visible.last { $0.1 <= zoom + 0.01 } ?? visible.first
+        for (button, preset) in visible {
+            let isActive = button === active?.0
+            let label: String
+            if isActive {
+                let shown = abs(zoom - preset) < 0.01 ? preset : (zoom * 10).rounded() / 10
+                label = Self.zoomLabel(shown, withTimes: true)
+            } else {
+                label = Self.zoomLabel(preset, withTimes: false)
+            }
+            button.setTitle(label, for: .normal)
+            button.setTitleColor(isActive ? UIColor(red: 1, green: 0.84, blue: 0.04, alpha: 1) : .white, for: .normal)
+            button.backgroundColor = isActive ? UIColor(white: 0.08, alpha: 0.6) : .clear
+            button.accessibilityLabel = "Zoom \(Self.zoomLabel(preset, withTimes: true))"
+            button.accessibilityTraits = isActive ? [.button, .selected] : .button
+        }
+    }
+
+    // Camera-app labels: plain ".75", "1", "1.5" for inactive presets; the active
+    // one gets a "×" and keeps its leading zero ("0.75×").
+    private static func zoomLabel(_ zoom: CGFloat, withTimes: Bool) -> String {
+        let formatter = NumberFormatter()
+        formatter.minimumFractionDigits = 0
+        formatter.maximumFractionDigits = 2
+        formatter.minimumIntegerDigits = withTimes ? 1 : 0
+        let number = formatter.string(from: NSNumber(value: Double(zoom))) ?? "\(zoom)"
+        return withTimes ? number + "×" : number
+    }
+
+    @objc private func zoomPresetTapped(_ sender: UIButton) {
+        let preset = Self.zoomPresets[sender.tag]
+        vManager.setShownZoom(preset)
+        refreshZoomPresets(zoom: preset)
+        UISelectionFeedbackGenerator().selectionChanged()
+    }
+
+    private func setupTimerStyling() {
+        guard let stack = Timerdisp.superview, let container = stack.superview else { return }
+        timerBacking.layer.cornerRadius = 6
+        timerBacking.isUserInteractionEnabled = false
+        timerBacking.translatesAutoresizingMaskIntoConstraints = false
+        container.insertSubview(timerBacking, belowSubview: stack)
+
+        pausedTag.text = "PAUSED"
+        pausedTag.font = UIFont.systemFont(ofSize: 13, weight: .bold)
+        pausedTag.textColor = .white
+        pausedTag.textAlignment = .center
+        pausedTag.backgroundColor = UIColor(red: 0.93, green: 0.27, blue: 0.24, alpha: 1)
+        pausedTag.layer.cornerRadius = 5
+        pausedTag.layer.masksToBounds = true
+        pausedTag.translatesAutoresizingMaskIntoConstraints = false
+        container.addSubview(pausedTag)
+
+        NSLayoutConstraint.activate([
+            timerBacking.centerXAnchor.constraint(equalTo: Timerdisp.centerXAnchor),
+            timerBacking.centerYAnchor.constraint(equalTo: Timerdisp.centerYAnchor),
+            timerBacking.widthAnchor.constraint(equalTo: Timerdisp.widthAnchor, constant: 14),
+            timerBacking.heightAnchor.constraint(equalToConstant: 30),
+            pausedTag.centerXAnchor.constraint(equalTo: Timerdisp.centerXAnchor),
+            pausedTag.topAnchor.constraint(equalTo: timerBacking.bottomAnchor, constant: 6)
+        ])
+    }
+
+    private func updateTimerStyling() {
+        let recording = vManager.isCapturing && !vManager.isPaused
+        let paused = vManager.isCapturing && vManager.isPaused
+        timerBacking.backgroundColor = recording ? UIColor(red: 0.93, green: 0.27, blue: 0.24, alpha: 0.5)
+                                     : paused ? UIColor(white: 0.2, alpha: 0.5)
+                                     : .clear
+        Timerdisp.textColor = recording || paused ? .white : .systemGray
+        pausedTag.isHidden = !paused
+    }
+
+    // Matches the controls to vManager's state (see the property comment above).
+    private func updateCaptureControls(animated: Bool) {
+        let recording = vManager.isCapturing && !vManager.isPaused
+        let paused = vManager.isCapturing && vManager.isPaused
+
+        mainCaptureButton.style = !vManager.isCapturing ? .record : (paused ? .smallStop : .stop)
+        mainCaptureWidth.constant = paused ? Self.smallCaptureSize : Self.largeCaptureSize
+        sideCaptureButton.style = paused ? .record : .pause
+        sideCaptureWidth.constant = paused ? Self.largeCaptureSize : Self.smallCaptureSize
+        sideCaptureButton.isEnabled = vManager.isCapturing
+        updateTimerStyling()
+        highLight.isEnabled = recording
+        // Hidden controls also stop taking touches while they fade out.
+        sideCaptureButton.isUserInteractionEnabled = vManager.isCapturing
+        highLight.isUserInteractionEnabled = recording
+
+        let changes = {
+            self.sideCaptureButton.alpha = self.vManager.isCapturing ? 1 : 0
+            self.highLight.alpha = recording ? 1 : 0
+            self.view.layoutIfNeeded()
+        }
+        if animated {
+            UIView.animate(withDuration: 0.25, delay: 0, options: [.beginFromCurrentState, .curveEaseInOut],
+                           animations: changes)
+        } else {
+            changes()
+        }
+    }
+
+    // Middle button: Record when idle, Stop (with confirmation) once recording or paused.
+    @objc private func mainCaptureTapped() {
+        if vManager.isCapturing {
+            stopRecording(isLocal: true)
+        } else {
+            startRecording()
+        }
+    }
+
+    // Upper button: Pause while recording, Record (resume) while paused.
+    @objc private func sideCaptureTapped() {
+        guard vManager.isCapturing else { return }
+        if vManager.isPaused {
+            resumeRecording()
+        } else {
+            pauseRecording()
+        }
     }
 
     private func setupHighlightBadge() {
@@ -143,6 +484,9 @@ class CameraViewController: UIViewController {
             case .success:
                 self.vManager.captureSession?.startRunning()
                 self.vManager.isSessionRunning = ((self.vManager.captureSession?.isRunning) != nil)
+                // The camera devices exist now, so the presets can show the
+                // right zoom and hide what this camera can't reach.
+                DispatchQueue.main.async { self.refreshZoomPresets() }
 
             case .notAuthorized:
                 DispatchQueue.main.async {
@@ -203,56 +547,30 @@ class CameraViewController: UIViewController {
     // MARK: User Interface
     @IBAction func switchCamera(_ sender: Any) {
         vManager.switchCamera()
+        refreshZoomPresets()
     }
 
-    private func recordToggled() {
-        var recordButtonImage: UIImage?
-        if self.vManager.isCapturing {
-            if self.vManager.isPaused {
-                self.vManager.resumeRecording()
-                self.vManager.timer = Timer.scheduledTimer(timeInterval: 1.0, target: self, selector: #selector(keep_timer), userInfo: nil, repeats: true)
-                if #available(iOS 13.0, *) {
-                    recordButtonImage = UIImage(systemName: "pause.circle")
-                    recordButtonImage?.withTintColor(.yellow)
-                } else {
-                    recordButtonImage = UIImage(named: "recording")
-                }
-                self.recordButton?.tintColor = .yellow
-                resumeButton.isHidden = true
-                resumeButton.isEnabled = false
-                print("Capturing resume")
-            } else {
-                self.vManager.pauseRecording()
-                if #available(iOS 13.0, *) {
-                    recordButtonImage = UIImage(systemName: "record.circle")
-                    recordButtonImage?.withTintColor(.green)
-                } else {
-                    recordButtonImage = UIImage(named: "recording")
-                }
-                self.recordButton?.tintColor = .green
-                resumeButton.isHidden = false
-                resumeButton.isEnabled = true
-                print("Capturing pause")
-            }
-            self.recordButton?.setImage(recordButtonImage, for: .normal)
-        } else {
-            resumeButton.isHidden = true
-            resumeButton.isEnabled = false
-            setHighlightCount(0)
-            self.vManager.startRecording()
-            highLight.isEnabled = true
-            // Presenting the editor full-screen would tear down the capture session.
-            videoEditorButton.isEnabled = false
-            self.vManager.timer = Timer.scheduledTimer(timeInterval: 1.0, target: self, selector: #selector(keep_timer), userInfo: nil, repeats: true)
-            if #available(iOS 13.0, *) {
-                recordButtonImage = UIImage(systemName: "pause.circle")
-            } else {
-                recordButtonImage = UIImage(named: "recording")
-            }
-            self.recordButton?.tintColor = .yellow
-            self.recordButton?.setImage(recordButtonImage, for: .normal)
-            print("Start Capturing")
-        }
+    private func startRecording() {
+        setHighlightCount(0)
+        vManager.startRecording()
+        // Presenting the editor full-screen would tear down the capture session.
+        videoEditorButton.isEnabled = false
+        vManager.timer = Timer.scheduledTimer(timeInterval: 1.0, target: self, selector: #selector(keep_timer), userInfo: nil, repeats: true)
+        updateCaptureControls(animated: true)
+        print("Start Capturing")
+    }
+
+    private func pauseRecording() {
+        vManager.pauseRecording()
+        updateCaptureControls(animated: true)
+        print("Capturing pause")
+    }
+
+    private func resumeRecording() {
+        vManager.resumeRecording()
+        vManager.timer = Timer.scheduledTimer(timeInterval: 1.0, target: self, selector: #selector(keep_timer), userInfo: nil, repeats: true)
+        updateCaptureControls(animated: true)
+        print("Capturing resume")
     }
 
     // askToSaveFullVideo: prompt (once the file is finished) whether to keep the
@@ -266,29 +584,21 @@ class CameraViewController: UIViewController {
                 self.presentSaveFullVideoPrompt(decide)
             } : nil,
             completion: {DispatchQueue.main.async {self.activityIndicator.stopAnimating()}})
-        self.highLight.isEnabled = false
         setHighlightCount(0)
         Timerdisp.text = "0:00:00"
         videoEditorButton.isEnabled = true
-        var recordButtonImage: UIImage?
-        if #available(iOS 13.0, *) {
-            recordButtonImage = UIImage(systemName: "record.circle")
-            recordButtonImage?.withTintColor(.green)
-        } else {
-            recordButtonImage = UIImage(named: "recording")
-        }
-        self.resumeButton.isHidden = true
-        self.resumeButton.isEnabled = false
-        self.recordButton?.tintColor = .green
-        self.recordButton?.setImage(recordButtonImage, for: .normal)
+        updateCaptureControls(animated: true)
     }
 
     private func presentSaveFullVideoPrompt(_ decide: @escaping (Bool) -> Void) {
         let alert = UIAlertController(title: "Save Full Video?",
                                       message: "Highlight clips are saved either way. If you don't save the full recording, it will be deleted.",
                                       preferredStyle: .alert)
-        alert.addAction(UIAlertAction(title: "Save", style: .default) { _ in decide(true) })
+        let save = UIAlertAction(title: "Save", style: .default) { _ in decide(true) }
+        alert.addAction(save)
         alert.addAction(UIAlertAction(title: "Delete", style: .destructive) { _ in decide(false) })
+        // Save is the default: shown bold, and triggered by Return on a keyboard.
+        alert.preferredAction = save
         present(alert, animated: true)
     }
 
@@ -311,18 +621,6 @@ class CameraViewController: UIViewController {
         }
     }
 
-    @IBAction func record(_ sender: Any) {
-        recordToggled()
-    }
-
-    @IBAction func stopRecord(_ sender: Any) {
-        stopRecording(isLocal: true)
-    }
-
-    @IBAction func ResumeTapped(_ sender: Any) {
-        recordToggled()
-    }
-
     @IBAction func openVideoEditor(_ sender: Any) {
         guard #available(iOS 13.0, *), !vManager.isCapturing else { return }
         // Highlight folders first; picking one opens the editor on top.
@@ -334,7 +632,7 @@ class CameraViewController: UIViewController {
         present(folders, animated: true)
     }
 
-    @IBAction func highLightTouched(_ sender: Any) {
+    @objc private func highLightTouched(_ sender: Any) {
         print("hightlight pressed")
         (sender as! UIButton).shake()
         self.vManager.ishighLighting = true
@@ -352,13 +650,14 @@ class CameraViewController: UIViewController {
 
         if pinch.state == .began || pinch.state == .changed {
             let maxZoom = device.activeFormat.videoMaxZoomFactor
-            let minZoom = device.minAvailableVideoZoomFactor
+            let minZoom = videoManager.minimumZoomFactor(of: device) // no wider than 0.75×
             let newFactor = max(minZoom, min(pinchStartZoomFactor * pinch.scale, maxZoom))
             do {
                 try device.lockForConfiguration()
                 device.videoZoomFactor = newFactor
                 device.unlockForConfiguration()
                 vManager.deviceZoomFactor = newFactor
+                refreshZoomPresets()
             } catch {
                 print("Can't change zoom factor")
             }
@@ -480,7 +779,8 @@ class CameraViewController: UIViewController {
          let keyValueObservation = self.vManager.captureSession?.observe(\.isRunning, options: .new) { _, change in
              guard let isSessionRunning = change.newValue else { return }
              DispatchQueue.main.async {
-                 self.recordButton?.isEnabled = isSessionRunning
+                 // Pausing stops the session, but Stop and Resume must still work then.
+                 self.mainCaptureButton.isEnabled = isSessionRunning || self.vManager.isCapturing
              }
          }
          keyValueObservations.append(keyValueObservation!)
