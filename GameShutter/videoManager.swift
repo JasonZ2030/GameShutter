@@ -2,8 +2,7 @@
 //  videoManager.swift
 //  GameShutter
 //
-//  Created by Hanhui Zhang on 4/16/23.
-//  Copyright © 2023 Jabson. All rights reserved.
+//  Created by Jason Zhang on 4/16/23.
 //
 import UIKit
 import AVFoundation
@@ -43,7 +42,7 @@ class videoManager: NSObject {
     let sessionQueue = DispatchQueue(label: "session queue")
     //MARK: helper zoom
     var previousLocation = CGPoint.zero
-    //added by hanhui
+    //added by Jason
     var timer: Timer?
     //MARK: helper recording
     var cvPixelBuffer: CVPixelBuffer?
@@ -55,9 +54,9 @@ class videoManager: NSObject {
     var isBackCameraActive = true
     var orientation = UIInterfaceOrientation.portrait
     var deviceZoomFactor: CGFloat = 1.0
-    //added by hanhui
+    //added by Jason
     var deviceZoomScaleFactor: CGFloat = 0.01 // x2
-    //added by hanhui
+    //added by Jason
     var ishighLighting = false
     var highLightArray:[CMTime] = []
     // Wall-clock moment of each highlight, parallel to highLightArray — stamped as
@@ -460,7 +459,7 @@ class videoManager: NSObject {
             print("Can't stop recording")
             return
         }
-        //added by hanhui
+        //added by Jason
         //highLight.isEnabled = false //update UIButton
         ishighLighting = false
         timer?.invalidate()
@@ -627,7 +626,7 @@ class videoManager: NSObject {
         }*/
     }
     
-    //added by hanhui
+    //added by Jason
     private func generateHighLightClip(sourceURL:URL, completion: @escaping () -> Void) {
         print ("generate hight")
         // Every export enters this group; skipped highlights never do. So
@@ -870,7 +869,7 @@ extension videoManager: AVCaptureVideoDataOutputSampleBufferDelegate, AVCaptureA
                 self.firstSamplebufTime = sampleTime.presentationTimeStamp
                 self.firstSamplebuf = false
             }
-            //added by hanhui
+            //added by Jason
             if(ishighLighting)
             {
                 ishighLighting = false //disable the highlight

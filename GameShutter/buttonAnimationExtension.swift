@@ -2,8 +2,7 @@
 //  buttonAnimationExtension.swift
 //  GameShutter
 //
-//  Created by Hanhui Zhang on 4/30/23.
-//  Copyright © 2023 Jabson. All rights reserved.
+//  Created by Jason Zhang on 4/30/23.
 //
 
 import UIKit

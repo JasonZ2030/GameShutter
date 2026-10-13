@@ -1,9 +1,8 @@
 //
 //  CameraViewController.swift
-//  MagicVideo
+//  GameShutter
 //
-//  Created by jaba odishelashvili on 3/14/18.
-//  Copyright © 2018 Jabson. All rights reserved.
+//  Created by Jason Zhang on 3/14/18.
 //
 
 import UIKit
@@ -40,7 +39,7 @@ class CameraViewController: UIViewController {
 
     private let highlightBadge = HighlightBadgeLabel()
 
-    //added by hanhui, hide navigation item bar
+    //added by Jason, hide navigation item bar
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         navigationController?.setNavigationBarHidden(true, animated: false)

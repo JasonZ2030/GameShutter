@@ -1,9 +1,8 @@
 //
 //  AppDelegate.swift
-//  MagicVideo
+//  GameShutter
 //
-//  Created by jaba odishelashvili on 3/13/18.
-//  Copyright © 2018 Jabson. All rights reserved.
+//  Created by Jason Zhang on 3/13/18.
 //
 
 import UIKit

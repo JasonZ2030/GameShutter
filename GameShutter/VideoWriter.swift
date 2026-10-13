@@ -1,9 +1,8 @@
 //
 //  VideoWriter.swift
-//  MagicVideo
+//  GameShutter
 //
-//  Created by jaba odishelashvili on 3/19/18.
-//  Copyright © 2018 Jabson. All rights reserved.
+//  Created by Jason Zhang on 3/19/18.
 //
 
 import UIKit

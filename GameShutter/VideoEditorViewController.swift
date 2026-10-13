@@ -539,7 +539,7 @@ final class VideoEditorViewController: UIViewController {
                     self.busyOverlay.show(text: "Saving to Photos…", progress: nil, cancellable: false)
                     // Straight into the library, not the GameShutter folder —
                     // that's for highlight clips (the editor's source material).
-                    // The file is kept until sharing is done — the TikTok path
+                    // The file is kept until sharing is done — the More path
                     // shares the file itself.
                     PhotosAlbumSaver.save(videoURL: outputURL, albumName: nil, deleteAfterSave: false) { localIdentifier, error in
                         self.busyOverlay.isHidden = true
@@ -566,22 +566,20 @@ final class VideoEditorViewController: UIViewController {
 
     // MARK: Sharing
 
-    // After a successful export: Instagram, TikTok, or neither. Every path ends
+    // After a successful export: Instagram, the system share sheet, or neither. Every path ends
     // by deleting the local export file (the video is already in Photos).
     private func offerToShare(fileURL: URL, localIdentifier: String?) {
-        let alert = UIAlertController(title: "Saved to Photos",
-                                      message: "Share your highlight video?",
-                                      preferredStyle: .alert)
-        alert.addAction(UIAlertAction(title: "Instagram", style: .default) { _ in
-            self.shareToInstagram(localIdentifier: localIdentifier, fileURL: fileURL)
-        })
-        alert.addAction(UIAlertAction(title: "TikTok", style: .default) { _ in
-            self.shareToTikTok(fileURL: fileURL)
-        })
-        alert.addAction(UIAlertAction(title: "Not Now", style: .cancel) { _ in
-            try? FileManager.default.removeItem(at: fileURL)
-        })
-        present(alert, animated: true)
+        let card = ShareDestinationsViewController()
+        // Each choice runs after the card is dismissed, so the editor is free to
+        // present the share sheet or an error message.
+        card.onChoice = { destination in
+            switch destination {
+            case .instagram?: self.shareToInstagram(localIdentifier: localIdentifier, fileURL: fileURL)
+            case .more?: self.presentShareSheet(fileURL: fileURL)
+            case nil: try? FileManager.default.removeItem(at: fileURL)
+            }
+        }
+        present(card, animated: true)
     }
 
     // Instagram's library hook opens its posting flow with this Photos asset
@@ -603,17 +601,17 @@ final class VideoEditorViewController: UIViewController {
         }
     }
 
-    // TikTok has no public URL scheme for handing over a video; its official
-    // route is the TikTok OpenSDK (needs a client key from TikTok's developer
-    // portal). Until that's set up, this offers the system share sheet, where
-    // TikTok appears as a target when it's installed.
-    private func shareToTikTok(fileURL: URL) {
-        let sheet = UIActivityViewController(activityItems: [fileURL], applicationActivities: nil)
+    // "More": the system share sheet (Messages, AirDrop, TikTok, WhatsApp…).
+    // The file isn't deleted from the sheet's completion handler, since a
+    // share extension can still be reading it then (TikTok's hands off to its
+    // app after the sheet reports completion). It's moved into the editor's
+    // temp folder instead, which close() removes.
+    private func presentShareSheet(fileURL: URL) {
+        let sharedURL = importDirectory.appendingPathComponent(fileURL.lastPathComponent)
+        let item = (try? FileManager.default.moveItem(at: fileURL, to: sharedURL)) != nil ? sharedURL : fileURL
+        let sheet = UIActivityViewController(activityItems: [item], applicationActivities: nil)
         sheet.popoverPresentationController?.sourceView = exportButton
         sheet.popoverPresentationController?.sourceRect = exportButton.bounds
-        sheet.completionWithItemsHandler = { _, _, _, _ in
-            try? FileManager.default.removeItem(at: fileURL)
-        }
         present(sheet, animated: true)
     }
 
@@ -813,6 +811,151 @@ extension VideoEditorViewController: UIDocumentPickerDelegate {
             edited.audio = EditorAudio(asset: asset, name: url.deletingPathExtension().lastPathComponent)
             self.apply(edited)
         }
+    }
+}
+
+// MARK: - Share destinations
+
+// The post-export "share it?" card: Instagram (logo from the asset catalog's
+// "InstagramIcon") and More (the system share sheet) as image buttons, plus
+// Not Now.
+@available(iOS 13.0, *)
+final class ShareDestinationsViewController: UIViewController {
+    enum Destination {
+        case instagram, more
+    }
+
+    // Called after the card has been dismissed; nil = Not Now.
+    var onChoice: ((Destination?) -> Void)?
+
+    override var supportedInterfaceOrientations: UIInterfaceOrientationMask { return EditorOrientation.supported }
+
+    init() {
+        super.init(nibName: nil, bundle: nil)
+        modalPresentationStyle = .overFullScreen
+        modalTransitionStyle = .crossDissolve
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        view.backgroundColor = UIColor.black.withAlphaComponent(0.55)
+
+        let card = UIView()
+        card.backgroundColor = UIColor(white: 0.13, alpha: 1)
+        card.layer.cornerRadius = 18
+
+        let title = UILabel()
+        title.text = "Saved to Photos"
+        title.textColor = .white
+        title.font = UIFont.systemFont(ofSize: 20, weight: .bold)
+        title.textAlignment = .center
+
+        let subtitle = UILabel()
+        subtitle.text = "Share your highlight video"
+        subtitle.textColor = UIColor(white: 0.65, alpha: 1)
+        subtitle.font = UIFont.systemFont(ofSize: 15)
+        subtitle.textAlignment = .center
+
+        let instagram = makeDestination(
+            title: "Instagram", assetName: "InstagramIcon",
+            fallback: fallbackTile(symbol: "camera",
+                                   colors: [UIColor(red: 0.51, green: 0.23, blue: 0.71, alpha: 1),
+                                            UIColor(red: 0.99, green: 0.11, blue: 0.40, alpha: 1),
+                                            UIColor(red: 0.99, green: 0.69, blue: 0.27, alpha: 1)]),
+            action: #selector(instagramTapped))
+        let more = makeDestination(
+            title: "More", assetName: "",
+            fallback: fallbackTile(symbol: "ellipsis", colors: [UIColor(white: 0.32, alpha: 1), UIColor(white: 0.22, alpha: 1)]),
+            action: #selector(moreTapped))
+        let destinations = UIStackView(arrangedSubviews: [instagram, more])
+        destinations.spacing = 40
+        destinations.alignment = .top
+
+        let notNow = UIButton(type: .system)
+        notNow.setTitle("Not Now", for: .normal)
+        notNow.setTitleColor(UIColor(white: 0.75, alpha: 1), for: .normal)
+        notNow.titleLabel?.font = UIFont.systemFont(ofSize: 16, weight: .medium)
+        notNow.addTarget(self, action: #selector(notNowTapped), for: .touchUpInside)
+
+        let stack = UIStackView(arrangedSubviews: [title, subtitle, destinations, notNow])
+        stack.axis = .vertical
+        stack.alignment = .center
+        stack.spacing = 6
+        stack.setCustomSpacing(26, after: subtitle)
+        stack.setCustomSpacing(22, after: destinations)
+
+        [card, stack].forEach { $0.translatesAutoresizingMaskIntoConstraints = false }
+        view.addSubview(card)
+        card.addSubview(stack)
+        NSLayoutConstraint.activate([
+            card.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            card.centerYAnchor.constraint(equalTo: view.centerYAnchor),
+            card.widthAnchor.constraint(equalToConstant: 300),
+            stack.topAnchor.constraint(equalTo: card.topAnchor, constant: 24),
+            stack.bottomAnchor.constraint(equalTo: card.bottomAnchor, constant: -14),
+            stack.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 16),
+            stack.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -16)
+        ])
+    }
+
+    // An icon button with its name underneath.
+    private func makeDestination(title: String, assetName: String, fallback: UIImage, action: Selector) -> UIView {
+        let button = UIButton(type: .custom)
+        button.setImage(UIImage(named: assetName) ?? fallback, for: .normal)
+        button.imageView?.contentMode = .scaleAspectFit
+        button.adjustsImageWhenHighlighted = true
+        button.layer.cornerRadius = 18
+        button.clipsToBounds = true
+        button.accessibilityLabel = "Share to \(title)"
+        button.addTarget(self, action: action, for: .touchUpInside)
+
+        let label = UILabel()
+        label.text = title
+        label.textColor = .white
+        label.font = UIFont.systemFont(ofSize: 14, weight: .medium)
+
+        let column = UIStackView(arrangedSubviews: [button, label])
+        column.axis = .vertical
+        column.alignment = .center
+        column.spacing = 8
+        button.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            button.widthAnchor.constraint(equalToConstant: 76),
+            button.heightAnchor.constraint(equalToConstant: 76)
+        ])
+        return column
+    }
+
+    // Stand-in until the official logos are added: a rounded tile with a
+    // gradient and an SF Symbol.
+    private func fallbackTile(symbol: String, colors: [UIColor]) -> UIImage {
+        let size = CGSize(width: 76, height: 76)
+        return UIGraphicsImageRenderer(size: size).image { context in
+            let rect = CGRect(origin: .zero, size: size)
+            UIBezierPath(roundedRect: rect, cornerRadius: 18).addClip()
+            let gradient = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(),
+                                      colors: colors.map { $0.cgColor } as CFArray, locations: nil)!
+            context.cgContext.drawLinearGradient(gradient, start: CGPoint(x: 0, y: size.height),
+                                                 end: CGPoint(x: size.width, y: 0), options: [])
+            let glyph = UIImage(systemName: symbol, withConfiguration: UIImage.SymbolConfiguration(pointSize: 32, weight: .semibold))?
+                .withTintColor(.white, renderingMode: .alwaysOriginal)
+            if let glyph = glyph {
+                glyph.draw(at: CGPoint(x: (size.width - glyph.size.width) / 2, y: (size.height - glyph.size.height) / 2))
+            }
+        }
+    }
+
+    @objc private func instagramTapped() { finish(.instagram) }
+    @objc private func moreTapped() { finish(.more) }
+    @objc private func notNowTapped() { finish(nil) }
+
+    private func finish(_ destination: Destination?) {
+        let onChoice = self.onChoice
+        dismiss(animated: true) { onChoice?(destination) }
     }
 }
 

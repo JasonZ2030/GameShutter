@@ -2,8 +2,7 @@
 //  optionLabelTableViewCell.swift
 //  GameShutter
 //
-//  Created by Hanhui Zhang on 6/13/20.
-//  Copyright © 2020 Jabson. All rights reserved.
+//  Created by Jason Zhang on 6/13/20.
 //
 
 import UIKit
