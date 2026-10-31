@@ -7,11 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		AE679F02E8D28A79023C39C2 /* HighlightFoldersViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = EEE65F53E9421CE50211670E /* HighlightFoldersViewController.swift */; };
 		149D439536B3216FDAEEB975 /* PhotosAlbumSaver.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4C123B1612DD272D1371C17 /* PhotosAlbumSaver.swift */; };
-		8F219E9CB0EB53F16947CCF2 /* EditorComposition.swift in Sources */ = {isa = PBXBuildFile; fileRef = 729FAE923D5A4FD12AABFE22 /* EditorComposition.swift */; };
-		DBA41ECCCC3FC1626E53A130 /* EditorTimelineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5EC84D8DBC74254770F58904 /* EditorTimelineView.swift */; };
-		F506B40928B5B7A767C76FB0 /* VideoEditorViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43B026C48BBF33FEFF9243A8 /* VideoEditorViewController.swift */; };
 		26B71D5529ECD3E40050516E /* videoManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26B71D5429ECD3E40050516E /* videoManager.swift */; };
 		26B71D5729FEF6B10050516E /* buttonAnimationExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26B71D5629FEF6B10050516E /* buttonAnimationExtension.swift */; };
 		26BD883924945EA700B08043 /* settingViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26BD883824945EA700B08043 /* settingViewController.swift */; };
@@ -19,6 +15,9 @@
 		26BD884124953FB700B08043 /* fieldTableViewCell.xib in Resources */ = {isa = PBXBuildFile; fileRef = 26BD883F24953FB700B08043 /* fieldTableViewCell.xib */; };
 		26BD884424955F2800B08043 /* optionLabelTableViewCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26BD884224955F2800B08043 /* optionLabelTableViewCell.swift */; };
 		26BD884524955F2800B08043 /* optionLabelTableViewCell.xib in Resources */ = {isa = PBXBuildFile; fileRef = 26BD884324955F2800B08043 /* optionLabelTableViewCell.xib */; };
+		8F219E9CB0EB53F16947CCF2 /* EditorComposition.swift in Sources */ = {isa = PBXBuildFile; fileRef = 729FAE923D5A4FD12AABFE22 /* EditorComposition.swift */; };
+		AE679F02E8D28A79023C39C2 /* HighlightFoldersViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = EEE65F53E9421CE50211670E /* HighlightFoldersViewController.swift */; };
+		DBA41ECCCC3FC1626E53A130 /* EditorTimelineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5EC84D8DBC74254770F58904 /* EditorTimelineView.swift */; };
 		F23DB24B205FA859000EE646 /* VideoWriter.swift in Sources */ = {isa = PBXBuildFile; fileRef = F23DB24A205FA859000EE646 /* VideoWriter.swift */; };
 		F24CCDB32057F8C700A26A5B /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F24CCDB22057F8C700A26A5B /* AppDelegate.swift */; };
 		F24CCDB82057F8C700A26A5B /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = F24CCDB62057F8C700A26A5B /* Main.storyboard */; };
@@ -27,14 +26,10 @@
 		F24CCDC62059173900A26A5B /* Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = F24CCDC52059173900A26A5B /* Constants.swift */; };
 		F24CCDC820593B0500A26A5B /* CameraViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = F24CCDC720593B0500A26A5B /* CameraViewController.swift */; };
 		F24CCDCB205BBFB500A26A5B /* ImageEffects.swift in Sources */ = {isa = PBXBuildFile; fileRef = F24CCDCA205BBFB500A26A5B /* ImageEffects.swift */; };
+		F506B40928B5B7A767C76FB0 /* VideoEditorViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43B026C48BBF33FEFF9243A8 /* VideoEditorViewController.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		EEE65F53E9421CE50211670E /* HighlightFoldersViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HighlightFoldersViewController.swift; sourceTree = "<group>"; };
-		A4C123B1612DD272D1371C17 /* PhotosAlbumSaver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotosAlbumSaver.swift; sourceTree = "<group>"; };
-		729FAE923D5A4FD12AABFE22 /* EditorComposition.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorComposition.swift; sourceTree = "<group>"; };
-		5EC84D8DBC74254770F58904 /* EditorTimelineView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorTimelineView.swift; sourceTree = "<group>"; };
-		43B026C48BBF33FEFF9243A8 /* VideoEditorViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoEditorViewController.swift; sourceTree = "<group>"; };
 		26B71D5429ECD3E40050516E /* videoManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = videoManager.swift; sourceTree = "<group>"; };
 		26B71D5629FEF6B10050516E /* buttonAnimationExtension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = buttonAnimationExtension.swift; sourceTree = "<group>"; };
 		26BD883824945EA700B08043 /* settingViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = settingViewController.swift; sourceTree = "<group>"; };
@@ -42,6 +37,11 @@
 		26BD883F24953FB700B08043 /* fieldTableViewCell.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = fieldTableViewCell.xib; sourceTree = "<group>"; };
 		26BD884224955F2800B08043 /* optionLabelTableViewCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = optionLabelTableViewCell.swift; sourceTree = "<group>"; };
 		26BD884324955F2800B08043 /* optionLabelTableViewCell.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = optionLabelTableViewCell.xib; sourceTree = "<group>"; };
+		43B026C48BBF33FEFF9243A8 /* VideoEditorViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoEditorViewController.swift; sourceTree = "<group>"; };
+		5EC84D8DBC74254770F58904 /* EditorTimelineView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorTimelineView.swift; sourceTree = "<group>"; };
+		729FAE923D5A4FD12AABFE22 /* EditorComposition.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorComposition.swift; sourceTree = "<group>"; };
+		A4C123B1612DD272D1371C17 /* PhotosAlbumSaver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotosAlbumSaver.swift; sourceTree = "<group>"; };
+		EEE65F53E9421CE50211670E /* HighlightFoldersViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HighlightFoldersViewController.swift; sourceTree = "<group>"; };
 		F23DB24A205FA859000EE646 /* VideoWriter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoWriter.swift; sourceTree = "<group>"; };
 		F24CCDAF2057F8C700A26A5B /* GameShutter.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = GameShutter.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		F24CCDB22057F8C700A26A5B /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
@@ -360,12 +360,12 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = 8P2SHD926U;
+				DEVELOPMENT_TEAM = 47R629A9QT;
 				INFOPLIST_FILE = GameShutter/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 12.4;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "zhang-hanhui-icloud.com";
+				PRODUCT_BUNDLE_IDENTIFIER = "com.jason-zhang.GameShutter";
 				PRODUCT_NAME = GameShutter;
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_VERSION = 5.0;
@@ -379,12 +379,12 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = 8P2SHD926U;
+				DEVELOPMENT_TEAM = 47R629A9QT;
 				INFOPLIST_FILE = GameShutter/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 12.4;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "zhang-hanhui-icloud.com";
+				PRODUCT_BUNDLE_IDENTIFIER = "com.jason-zhang.GameShutter";
 				PRODUCT_NAME = GameShutter;
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_VERSION = 5.0;

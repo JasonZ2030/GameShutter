@@ -381,7 +381,7 @@ class videoManager: NSObject {
                  Setting (focus/exposure)PointOfInterest alone does not initiate a (focus/exposure) operation.
                  Call set(Focus/Exposure)Mode() to apply the new point of interest.
                  */
-                if device.isFocusPointOfInterestSupported && ((device.isFocusModeSupported(focusMode)) != nil) {
+                if device.isFocusPointOfInterestSupported && device.isFocusModeSupported(focusMode) {
                     device.focusPointOfInterest = devicePoint
                     device.focusMode = focusMode
                 }
@@ -754,9 +754,9 @@ class videoManager: NSObject {
                     })
                     break
                 case .failed:
-                    print("failed \(exportSession.error)")//
+                    print("failed \(String(describing: exportSession.error))")//
                 case .cancelled:
-                    print("cancelled \(exportSession.error)")//
+                    print("cancelled \(String(describing: exportSession.error))")//
                 default: break
                 }
                 exports.leave()
